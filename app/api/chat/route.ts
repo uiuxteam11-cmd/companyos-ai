@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { streamText, StreamingTextResponse } from 'ai';
+import { streamText } from 'ai';
 import { maskPII } from '@/lib/security';
 
 export const runtime = 'edge';
@@ -25,14 +25,13 @@ export async function POST(req: Request) {
     }
 
     // 3. AI Call: Send the masked prompt to Google Gemini
-    const response = await streamText({
+    const result = await streamText({
       model: google(modelToUse),
       messages: messages,
     });
 
-    // 4. Stream the response back to the frontend
-    // (If the AI echoes back [PAN_MASKED_1], the frontend will unmask it later)
-    return new StreamingTextResponse(response.toAIStream());
+    // 4. Stream the response back to the frontend using the new Vercel AI SDK v3 method
+    return result.toDataStreamResponse();
     
   } catch (error) {
     console.error("API Error:", error);
