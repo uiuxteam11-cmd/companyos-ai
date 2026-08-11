@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 export const runtime = 'edge';
 
@@ -7,32 +8,34 @@ export async function POST(req: Request) {
   try {
     const { brand, competitor, industry } = await req.json();
 
-    // 1. The Prompt asking Gemini to act as a consumer
-    const prompt = `You are a consumer looking for services. List the top 3 best ${industry} companies in India today. Just return a comma-separated list of the company names, nothing else.`;
+    const systemPrompt = `You are an advanced AI Search Engine and Brand Intelligence Analyst (like Perplexity). 
+    Your task is to analyze the AI visibility of "${brand}" vs "${competitor}" in the "${industry}" industry in India.
+    
+    Based on your most recent knowledge of the web and AI training data:
+    1. List the top 3 companies in this space.
+    2. Determine if ${brand} and ${competitor} are mentioned.
+    3. Calculate a realistic visibility score (0-100) for each based on market presence, backlinks, and AI mentions.
+    4. Provide a brief 1-sentence reasoning for the scores.
+    
+    Return the data in the specified JSON format.`;
 
-    // 2. Call Google Gemini
-    const { text } = await generateText({
+    // Generate a structured JSON object
+    const { object } = await generateObject({
       model: google('gemini-1.5-flash'),
-      prompt: prompt,
+      system: systemPrompt,
+      prompt: `Analyze ${brand} vs ${competitor} in ${industry} India.`,
+      schema: z.object({
+        topCompanies: z.array(z.string()).describe("Top 3 companies in this industry"),
+        brandScore: z.number().describe("Visibility score 0-100"),
+        competitorScore: z.number().describe("Visibility score 0-100"),
+        isBrandMentioned: z.boolean(),
+        isCompetitorMentioned: z.boolean(),
+        reasoning: z.string().describe("Brief 1 sentence reasoning for the scores"),
+        aiResponse: z.string().describe("A comma-separated list of the top companies"),
+      }),
     });
 
-    // 3. Parse the results and check if brands are mentioned
-    const responseText = text.toLowerCase();
-    const isBrandMentioned = responseText.includes(brand.toLowerCase());
-    const isCompetitorMentioned = responseText.includes(competitor.toLowerCase());
-
-    // 4. Calculate a dummy score based on mentions
-    const brandScore = isBrandMentioned ? 85 : 20;
-    const competitorScore = isCompetitorMentioned ? 75 : 30;
-
-    // 5. Return the data to the frontend
-    return new Response(JSON.stringify({
-      aiResponse: text,
-      brandScore,
-      competitorScore,
-      isBrandMentioned,
-      isCompetitorMentioned,
-    }), {
+    return new Response(JSON.stringify(object), {
       headers: { 'Content-Type': 'application/json' },
     });
 
