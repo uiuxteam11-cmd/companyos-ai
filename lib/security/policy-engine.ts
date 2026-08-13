@@ -16,3 +16,54 @@ export function evaluateActionRisk(action: string): PolicyDecision {
   if (mediumRiskActions.includes(action)) return { risk: "medium", requiresApproval: false, reason: "This action is logged and subject to workspace policy." };
   return { risk: "low", requiresApproval: false, reason: "Read-only or reversible action." };
 }
+
+import type { AgentTool } from "@/lib/agents/types";
+
+export interface SecurityPolicyResult {
+  allowed: boolean;
+  risk: ActionRisk;
+  reason: string;
+  requiresApproval: boolean;
+}
+
+function evaluateRiskFromTool(tool: Pick<AgentTool, "name" | "riskLevel">): PolicyDecision {
+  const mappedDecision = evaluateActionRisk(tool.name);
+  const toolRisk = tool.riskLevel ?? mappedDecision.risk;
+
+  if (toolRisk === "critical") {
+    return {
+      risk: "critical",
+      requiresApproval: true,
+      reason: "This action is critical and must be explicitly approved by an authorized human.",
+    };
+  }
+
+  if (toolRisk === "high") {
+    return {
+      risk: "high",
+      requiresApproval: true,
+      reason: "This action has an external or irreversible impact.",
+    };
+  }
+
+  if (toolRisk === "medium") {
+    return {
+      risk: "medium",
+      requiresApproval: false,
+      reason: "This action is logged and subject to workspace policy.",
+    };
+  }
+
+  return mappedDecision;
+}
+
+export function evaluateAction(tool: Pick<AgentTool, "name" | "riskLevel">, input: unknown): SecurityPolicyResult {
+  void input;
+  const decision = evaluateRiskFromTool(tool);
+  return {
+    allowed: true,
+    risk: decision.risk,
+    reason: decision.reason,
+    requiresApproval: decision.requiresApproval,
+  };
+}

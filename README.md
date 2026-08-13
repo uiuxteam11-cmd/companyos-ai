@@ -1,101 +1,114 @@
 # CompanyOS AI
 
-CompanyOS AI is a secure enterprise operating system for AI employees and AI-enabled teams. This Phase 1 foundation creates the multi-tenant platform base for authentication, workspace membership, a dashboard shell, and database security patterns that later phases can build on.
+CompanyOS AI is an enterprise AI workforce platform for creating, running, monitoring, and governing AI agents.
 
-## Technology stack
+The MVP focuses on:
 
-- Next.js 16 (App Router)
-- TypeScript
-- Tailwind CSS
-- Supabase PostgreSQL
-- Supabase Auth
-- Zod validation
-- Vercel deployment target
-- npm package manager
+- AI agent identity, roles, tools, memory, and execution state
+- human-in-the-loop approvals for sensitive actions
+- browser and page-reading infrastructure with safe failure modes
+- AI visibility / SEO analysis for brand intelligence
+- collaborative multiplayer observability through Liveblocks when configured
+- security controls for PII redaction, policy checks, and auditability
 
-## Local setup
+## What the product does
 
-1. Install dependencies:
-   npm install
-2. Copy the example environment file:
-   cp .env.example .env.local
-3. Add your Supabase values.
-4. Start the local development server:
-   npm run dev
-
-## Environment variables
-
-Create .env.local with the following values:
-
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-
-Do not expose a service role key in the browser. Keep any privileged keys server-only.
-
-## Supabase setup
-
-1. Create a new Supabase project.
-2. Add your project URL and anon key to .env.local.
-3. Run the migration under supabase/migrations.
-4. Confirm the `auth.users` trigger and row-level security policies are active.
-
-## Database migration instructions
-
-From the project root:
-
-1. Open your Supabase SQL editor.
-2. Run the migration in `supabase/migrations/202608120001_initial_schema.sql`.
-3. Validate that the tables and policies were created in the `public` schema.
-
-## Development commands
-
-- npm install
-- npm run dev
-- npm run build
-- npm run lint
-- npm start
+- Lets teams launch AI agents for research, operations, marketing, finance, legal, and sales work
+- Surfaces execution status, run history, approvals, and audit events
+- Supports a browser-task abstraction for controlled navigation and page reading
+- Provides an AI visibility scan that compares a brand against a competitor and returns actionable recommendations
+- Offers a shared command-canvas experience for live collaboration when Liveblocks credentials are available
 
 ## Architecture overview
 
-User -> Authentication -> Workspace -> Workspace membership -> Dashboard shell -> Database foundation
+- `app/` contains the Next.js App Router UI and API routes
+- `lib/agents/` contains agent definitions, planning, execution state, and approval helpers
+- `lib/browser/` contains browser runtime contracts and guarded navigation helpers
+- `lib/memory/` contains company memory helpers and retrieval formatting
+- `lib/security/` contains PII masking and policy checks
+- `lib/tools/` exposes the governed tool registry used by the agent runtime
+- `lib/workflows/` contains workflow execution and scheduling foundations
+- `supabase/migrations/` contains the database schema used by the runtime
 
-## Agent runtime status
+## Key routes
 
-CompanyOS now has a persisted MVP agent execution loop:
+- `/api/agent` plans and executes a lightweight agent task
+- `/api/approve` resolves pending approval requests
+- `/api/chat` streams chat responses with PII masking
+- `/api/cron/daily-research` runs a scheduled research job
+- `/api/seo` returns structured AI visibility analysis
 
-`Queued task -> Planner -> Persisted step -> Security/policy-bound tool -> Verification -> Persisted result`
+## Setup
 
-The current planner deliberately uses only safe, allowlisted internal tools:
+1. Install dependencies:
 
-- `workspace_search`
-- `calculator`
+   `npm install`
 
-`workspace_search` is currently synthetic development-only data and must not be presented as a real knowledge result. `http_request` and `web_search` are provider-gated: they fail safely until their server-only configuration is set.
+2. Copy `.env.example` to `.env.local` and fill in the required values.
 
-Runs are persisted in Supabase and progress through `queued`, `planning`, `running`, `waiting_approval`, `paused`, `completed`, `failed`, or `cancelled`. Tool calls and agent events are recorded when the control-plane migration has been applied.
+3. Start the dev server:
 
-Before using agent tools, apply these migrations in order:
+   `npm run dev`
 
-1. `202608120001_initial_schema.sql`
-2. `202608120002_phase2_workspace_permissions.sql`
-3. `202608120003_agent_runtime_foundation.sql`
-4. `202608130001_agent_control_plane.sql`
-5. `202608130002_human_control_and_memory.sql`
-6. `202608130003_production_foundations.sql`
-7. `202608130004_run_execution_limits.sql`
-8. `202608130005_critical_risk_and_browser_sessions.sql`
-9. `202608130006_approval_memory_workflows.sql`
-10. `202608130007_realtime_canvas_state.sql`
+## Validation
 
-## Current Phase 1 limitations
+- `npm run lint`
+- `npm run build`
+- `npm test`
 
-- Browser automation is not connected to a provider yet.
-- External web search, CRM, email, calendar, and document providers are not connected yet.
-- Memory is persisted with company, department, agent, and task scopes. Workflow definitions, runs, and schedules are persisted with workspace RLS; a durable queue worker is still required to execute scheduled work in production.
-- Supabase Realtime now synchronizes persisted execution changes and authenticated viewer presence for each run canvas. Rich Liveblocks document editing, billing, and enterprise SSO remain future work.
-- The run canvas API projects only persisted run, event, tool-call, and approval data; a collaborative canvas renderer is still pending.
+## Environment variables
 
-## Future architecture phases
+### Required for production
 
-Phase 3: Real external tools behind the same permission, policy, verification, and audit boundary.
-Phase 4: Browser sessions, approvals, and execution-backed canvas controls.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
+
+### Required for scheduled cron use
+
+- `CRON_SECRET`
+
+### Required only for browser / collaboration / optional integrations
+
+- `NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `WEB_SEARCH_ENDPOINT`
+- `WEB_SEARCH_API_KEY`
+- `COMPANYOS_HTTP_ALLOWED_HOSTS`
+- `COMPANYOS_DAILY_RESEARCH_WORKSPACE_ID`
+
+### Optional provider settings
+
+- `GEMINI_MODEL`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
+- `GEMINI_BASE_URL`
+- `RATE_LIMIT_PROVIDER`
+- `QUEUE_PROVIDER`
+- `OBSERVABILITY_PROVIDER`
+- `BILLING_PROVIDER`
+- `SSO_PROVIDER`
+
+## Deployment to Vercel
+
+- Connect the repository to Vercel
+- Add the required environment variables in the Vercel project settings
+- Use the default build command: `npm run build`
+- Use the default start command: `npm run start`
+- Configure the cron secret for `/api/cron/daily-research`
+
+## Optional integrations
+
+- Supabase for persistence, auth, and realtime state
+- Liveblocks for multiplayer presence and collaboration
+- Gemini for chat, SEO, and research generation
+- OpenAI for alternate model routing
+- Web search endpoint for external search tooling
+
+## Current MVP limitations
+
+- Browser automation is represented through the guarded browser abstraction and may need a concrete provider to execute real page actions.
+- Company memory currently returns a structured in-memory fallback when persistence is not connected.
+- Approval resolution is in-memory for the MVP and does not yet survive process restarts.
+- The cron research route requires a valid secret and Gemini key before it can run.

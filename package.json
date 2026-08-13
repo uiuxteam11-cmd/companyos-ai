@@ -10,8 +10,15 @@
     "test": "node --test -r ts-node/register"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.39",
+    "@ai-sdk/openai": "^4.0.36",
+    "@ai-sdk/react": "^4.0.61",
+    "@liveblocks/client": "^3.23.1",
+    "@liveblocks/react": "^3.23.1",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
+    "ai": "^7.0.58",
+    "lucide-react": "^1.31.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
